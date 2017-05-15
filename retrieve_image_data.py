@@ -1,18 +1,29 @@
 #!/usr/bin/env python3
 
 import logging
-from os.path import basename
+import os
 import pandas as pd
 import shutil
 import urllib.request
 from urllib.parse import urlparse
 
 def save_images(data_set, root_dir):
+    positive_example_idx = 0
+    negative_example_idx = 0
+
     for image_url, by_van_gogh in data_set:
-        file_name = basename(urlparse(image_url).path)
-        path_to_save = ''.join([root_dir, 'positive/' if by_van_gogh else 'negative/', file_name])
+        _, file_extension = os.path.splitext(urlparse(image_url).path)
+        path_to_save = ''
+
+        if by_van_gogh:
+            path_to_save = ''.join([root_dir, 'positive/image_', str(positive_example_idx), file_extension])
+            positive_example_idx += 1
+        else:
+            path_to_save = ''.join([root_dir, 'negative/image_', str(negative_example_idx), file_extension])
+            negative_example_idx += 1
 
         logging.info('Saving file from URL: ' + image_url)
+        logging.info('to file path: ' + path_to_save)
 
         with urllib.request.urlopen(image_url) as response, open(path_to_save, 'wb') as output_file:
             shutil.copyfileobj(response, output_file)
