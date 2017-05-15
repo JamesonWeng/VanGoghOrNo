@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
 
 import logging
+from os.path import basename
 import pandas as pd
-import pickle
-from skimage import io
+import shutil
+import urllib.request
+from urllib.parse import urlparse
+
+def save_images(data_set, root_dir):
+    for image_url, by_van_gogh in data_set:
+        file_name = basename(urlparse(image_url).path)
+        path_to_save = ''.join([root_dir, 'positive/' if by_van_gogh else 'negative/', file_name])
+
+        logging.info('Saving file from URL: ' + image_url)
+
+        with urllib.request.urlopen(image_url) as response, open(path_to_save, 'wb') as output_file:
+            shutil.copyfileobj(response, output_file)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -12,22 +24,12 @@ logging.basicConfig(level=logging.DEBUG)
 # - load images from specified URLs
 # - record whether or not each image was painted by van Gogh
 images_info = pd.read_csv('data/vgdb_2016.csv')
+data_set = [(row['ImageURL'], row['Artist'] == 'Vincent van Gogh') for _, row in images_info.iterrows()]
 
-data_set = []
+# we split the data set into testing and training
+split_idx = int(0.7 * len(data_set))
+training_set = data_set[:split_idx]
+test_set = data_set[split_idx:]
 
-for index, row in images_info.iterrows():
-    logging.info('Retrieving image from ' + row['ImageURL'])
-
-    image = io.imread(row['ImageURL'])
-    by_van_gogh = row['Artist'] == 'Vincent van Gogh'
-
-    data_set.append((image, by_van_gogh))
-
-    if(index == 10):
-        break
-
-max_bytes = 2**31 - 1
-bytes_out = pickle.dumps(data_set)
-with open('image_data.serialized', 'wb') as data_file:
-    for idx in range(0, len(bytes_out), max_bytes):
-        data_file.write(bytes_out[idx : idx + max_bytes])
+save_images(training_set, 'data/training_set/')
+save_images(test_set, 'data/test_set/')
