@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
+from keras.models import Sequential
+from keras.preprocessing import image as kimage
+
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-import matplotlib.pyplot as plt
 
 import numpy as np
 np.random.seed(123)
@@ -13,33 +15,59 @@ import pandas as pd
 from skimage import io
 from skimage.transform import resize
 
+num_classes = 2
+
+def read_and_preprocess_image(file_path):
+    img = kimage.load_img(file_path, target_size=(400,400))
+    img_array = kimage.img_to_array(img)
+    #img_array = np.expand_dims(img_array, axis=0)
+    return img_array
+
 def load_data_set(root_dir):
     data_set = []
 
-    # read the positive examples
-    positive_example_dir = root_dir + 'positive/'
-    for file_name in listdir(positive_example_dir):
-        file_path = positive_example_dir + file_name;
-        logging.debug('loading image from ' + file_path)
-        data_set.append((io.imread(file_path), True)) 
-        break
+    for subdir, label in [('positive/', 1), ('negative/', 0)]:
+        file_dir = root_dir + subdir
 
-    # read the negative examples
-    negative_example_dir = root_dir + 'negative/'
-    for file_name in listdir(negative_example_dir):
-        file_path = negative_example_dir + file_name;
-        logging.debug('loading image from ' + file_path)
-        data_set.append((io.imread(file_path), True)) 
-        break
+        for file_name in listdir(file_dir):
+            if 'image' not in file_name:
+                continue
+            file_path = file_dir + file_name
+            logging.debug('loading image from ' + file_path)
+            data_set.append((read_and_preprocess_image(file_path), label))
+            break
 
-    return data_set
+    # shuffle the positive & negative examples together
+    np.random.shuffle(data_set)
+
+    x = np.array([img for img, _ in data_set], dtype='float32')
+    y = np.eye(num_classes, dtype='uint8')[[label for _, label in data_set]]
+    return x, y
 
 logging.info('loading training set')
-training_set = load_data_set('data/training_set/')
-
-# resize all the images
-logging.info('resizing the images')
-for image, _ in training_set:
-    image = resize(image, (400, 400), mode='reflect')
+x_train, y_train = load_data_set('data/training_set/')
+x_test, y_test = load_data_set('data/test_set/')
 
 # define the model
+logging.info('defining the model')
+model = Sequential()
+
+model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
+
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
+
+model.add(Dense(num_classes, activation='softmax'))
+
+# compile model
+logging.info('compiling the model')
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+model.fit(x_train, y_train, epochs=20, batch_size=128, verbose=1, validation_data=(x_test, y_test))
+
+model.save('model.h5')
