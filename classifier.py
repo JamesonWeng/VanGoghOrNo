@@ -20,7 +20,6 @@ num_classes = 2
 def read_and_preprocess_image(file_path):
     img = kimage.load_img(file_path, target_size=(400,400))
     img_array = kimage.img_to_array(img)
-    #img_array = np.expand_dims(img_array, axis=0)
     return img_array
 
 def load_data_set(root_dir):
@@ -44,15 +43,26 @@ def load_data_set(root_dir):
     return x, y
 
 logging.info('loading training set')
+
 x_train, y_train = load_data_set('data/training_set/')
-x_test, y_test = load_data_set('data/test_set/')
+logging.info('x_train shape: ' + str(x_train.shape))
+
+#x_test, y_test = load_data_set('data/test_set/')
 
 # define the model
 logging.info('defining the model')
+
 model = Sequential()
 
-model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
+model.add(Conv2D(32, (3, 3), activation='relu', 
+    input_shape=x_train.shape[1:], 
+    data_format='channels_last'))
 
+model.add(Conv2D(32, (3, 3), activation='relu'))
+model.add(MaxPooling2D(pool_size=(2,2)))
+model.add(Dropout(0.25))
+
+model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2,2)))
 model.add(Dropout(0.25))
@@ -67,6 +77,6 @@ model.add(Dense(num_classes, activation='softmax'))
 logging.info('compiling the model')
 model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
-model.fit(x_train, y_train, epochs=20, batch_size=128, verbose=1, validation_data=(x_test, y_test))
+model.fit(x_train, y_train, epochs=40, batch_size=128, verbose=1)
 
 model.save('model.h5')
