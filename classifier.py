@@ -35,7 +35,6 @@ def load_data_set(root_dir):
             file_path = file_dir + file_name
             logging.debug('loading image from ' + file_path)
             data_set.append((read_and_preprocess_image(file_path), label))
-            break
 
     # shuffle the positive & negative examples together
     np.random.shuffle(data_set)
