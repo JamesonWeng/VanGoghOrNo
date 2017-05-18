@@ -15,6 +15,10 @@ np.random.seed(123)
 
 from os import listdir
 import pandas as pd
+
+from PIL import Image
+Image.MAX_IMAGE_PIXELS=1000000000
+
 from skimage import io
 from skimage.transform import resize
 
@@ -25,10 +29,18 @@ NUM_CLASSES = 2
 NUM_EPOCHS = 60
 
 def preprocess_and_generate_samples(file_path, label):
-    img = kimage.load_img(file_path, target_size=(INPUT_WIDTH, INPUT_HEIGHT))
-    #img.show()
-    img_array = kimage.img_to_array(img)
+    img = Image.open(file_path)
 
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    hw_tuple = (INPUT_HEIGHT, INPUT_WIDTH)
+    if img.size != hw_tuple:
+        img = img.resize(hw_tuple)
+
+    img_array = kimage.img_to_array(img, 'channels_last')
+
+    #img.show()
     #plt.imshow(img_array)
     #plt.show()
 
@@ -69,22 +81,32 @@ def train_cnn_model(x_train, y_train):
 
     model.add(Conv2D(32, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Dropout(0.25))
+    # model.add(Dropout(0.25))
 
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Dropout(0.25))
+    # model.add(Dropout(0.25))
+
+    model.add(Conv2D(128, (3, 3), activation='relu'))
+    model.add(Conv2D(128, (3, 3), activation='relu'))
+    model.add(Conv2D(128, (3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2,2)))
+    # model.add(Dropout(0.25))
 
     model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
+
+    model.add(Dense(1024, activation='relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(512, activation='relu'))
     model.add(Dropout(0.5))
 
     model.add(Dense(NUM_CLASSES, activation='softmax'))
 
     # compile model
     logging.info('compiling the model')
-    sgd = SGD(lr=0.0001)
+    sgd = SGD(lr=0.0001) # 0.0001, 
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     # fit the model
