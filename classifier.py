@@ -26,7 +26,7 @@ BATCH_SIZE = 32
 INPUT_WIDTH = 400
 INPUT_HEIGHT = 400
 NUM_CLASSES = 2
-NUM_EPOCHS = 60
+NUM_EPOCHS = 50
 
 def preprocess_and_generate_samples(file_path, label):
     img = Image.open(file_path)
@@ -81,18 +81,18 @@ def train_cnn_model(x_train, y_train):
 
     model.add(Conv2D(32, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    # model.add(Dropout(0.25))
+    model.add(Dropout(0.25))
 
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    # model.add(Dropout(0.25))
+    model.add(Dropout(0.25))
 
     model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    # model.add(Dropout(0.25))
+    model.add(Dropout(0.25))
 
     model.add(Flatten())
 
@@ -106,12 +106,10 @@ def train_cnn_model(x_train, y_train):
 
     # compile model
     logging.info('compiling the model')
-    sgd = SGD(lr=0.0001) # 0.0001, 
-    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    sgd = SGD(lr=0.0001) # 0.0001, 0.00001, 0.000001
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     # fit the model
-    # model.fit(x_train, y_train, epochs=NUM_EPOCHS, batch_size=BATCH_SIZE, verbose=1)
-
     datagen = kimage.ImageDataGenerator(
             featurewise_center=True,
             featurewise_std_normalization=True)
