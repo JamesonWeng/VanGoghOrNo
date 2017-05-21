@@ -7,7 +7,7 @@ from keras.preprocessing import image as kimage
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
-from os import listdir
+import os
 from PIL import Image
 
 logging.basicConfig(level=logging.DEBUG)
@@ -32,7 +32,8 @@ def train_cnn_model():
             batch_size=BATCH_SIZE,
             class_mode='categorical')
 
-    train_size = len(os.listdir('data/training'))
+    train_size = len(os.listdir('data/training/positive')) + len(os.listdir('data/training/negative/'))
+    logging.info('training_size: ' + str(train_size))
 
 
     validation_datagen = kimage.ImageDataGenerator(rescale=1./255, data_format='channels_last')
@@ -42,7 +43,8 @@ def train_cnn_model():
             batch_size=BATCH_SIZE,
             class_mode='categorical')
 
-    validation_size = len(os.listdir('data/validation/')
+    validation_size = len(os.listdir('data/validation/positive')) + len(os.listdir('data/validation/negative'))
+    logging.info('validation_size: ' + str(validation_size))
 
     # define the model
     logging.info('defining the model')
