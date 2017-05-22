@@ -20,11 +20,59 @@ INPUT_HEIGHT = 400
 NUM_CLASSES = 2
 NUM_EPOCHS = 50
 
+def preprocess_and_generate_samples(file_path, label):
+    img = Image.open(file_path)
+
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    hw_tuple = (INPUT_HEIGHT, INPUT_WIDTH)
+    if img.size != hw_tuple:
+        img = img.resize(hw_tuple)
+
+    img_array = kimage.img_to_array(img, 'channels_last')
+
+    #img.show()
+    #plt.imshow(img_array)
+    #plt.show()
+
+    return [(img_array, label)]
+
+def load_data_set(root_dir):
+    data_set = []
+
+    for subdir, label in [('positive/', 1), ('negative/', 0)]:
+        file_dir = root_dir + subdir
+
+        for file_name in os.listdir(file_dir):
+            if 'image' not in file_name:
+                continue
+            file_path = file_dir + file_name
+            logging.debug('loading image from ' + file_path)
+            data_set.extend(preprocess_and_generate_samples(file_path, label))
+            # data_set.append((read_and_preprocess_image(file_path), label))
+            # break
+
+    # shuffle the positive & negative examples together
+    np.random.shuffle(data_set)
+
+    x = np.array([img for img, _ in data_set], dtype='float32')
+    y = np.eye(NUM_CLASSES, dtype='uint8')[[label for _, label in data_set]]
+
+    return x, y
+
 def train_cnn_model():
     # prepare the data generators
     logging.info('creating the data generators')
 
+    '''
     # we split the data into training and validation, 70:30
+    train_datagen = kimage.ImageDataGenerator(
+            featurewise_center=True,
+            featurewise_std_normalization=True)
+    train_datagen.fit(x_train)
+    '''
+
     train_datagen = kimage.ImageDataGenerator(rescale=1./255, data_format='channels_last')
     train_generator = train_datagen.flow_from_directory(
             'data/training/',
@@ -34,7 +82,6 @@ def train_cnn_model():
 
     train_size = len(os.listdir('data/training/positive')) + len(os.listdir('data/training/negative/'))
     logging.info('training_size: ' + str(train_size))
-
 
     validation_datagen = kimage.ImageDataGenerator(rescale=1./255, data_format='channels_last')
     validation_generator = validation_datagen.flow_from_directory(
@@ -82,11 +129,18 @@ def train_cnn_model():
 
     # compile model
     logging.info('compiling the model')
-    sgd = SGD(lr=0.001) # 0.0001
+    sgd = SGD(lr=0.01) # 0.0001, 0.00001
     model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     # fit the model
     logging.info('fitting the model')
+
+    '''
+    model.fit_generator(
+            generator=train_datagen.flow(x_train, y_train, batch_size=BATCH_SIZE),
+            steps_per_epoch=len(x_train) / BATCH_SIZE,
+            epochs=NUM_EPOCHS)
+    '''
 
     model.fit_generator(
             generator=train_generator,
@@ -99,5 +153,7 @@ def train_cnn_model():
     logging.info('saving the model')
     model.save('cnn_model.h5')
 
+
+logging.info('loading training set')
 
 train_cnn_model()
