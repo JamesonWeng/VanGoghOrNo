@@ -29,31 +29,12 @@ def crop_and_save_dataset(data_set, target_dir):
         if img.mode != 'RGB':
             img = img.convert('RGB')
 
-        # crop out regions of size (INPUT_WIDTH, INPUT_HEIGHT)
-        # from the image
-        width, height = img.size
+        img = img.resize((INPUT_WIDTH, INPUT_HEIGHT))
 
-        for topleft_x in range(0, width // 2 + 1, width // 2):
-            for topleft_y in range(0, height // 2 + 1, height // 2):
-                img_portion = img.crop((topleft_x, topleft_y, topleft_x + width // 2, topleft_y + height // 2))
-                
-                path = ''.join([target_dir, 'image_', str(image_idx), '.bmp'])
-                image_idx += 1
+        path = ''.join([target_dir, 'image_', str(image_idx), '.bmp'])
+        image_idx += 1
 
-                logging.info('Saving image to path: ' + path)
-                img_portion.save(path)
-
-        '''
-        for topleft_x in range(0, width - INPUT_WIDTH, INPUT_WIDTH):
-            for topleft_y in range(0, height - INPUT_HEIGHT, INPUT_HEIGHT):
-                img_portion = img.crop((topleft_x, topleft_y, topleft_x + INPUT_WIDTH, topleft_y + INPUT_HEIGHT))
-                
-                path = ''.join([target_dir, 'image_', str(image_idx), '.bmp'])
-                image_idx += 1
-
-                logging.info('Saving image to path: ' + path)
-                img_portion.save(path)
-        '''
+        img.save(path)
 
 # returns training_set, validation_set, test_set 
 # grouped according to the specified ratios

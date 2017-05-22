@@ -65,33 +65,20 @@ def train_cnn_model():
     # prepare the data generators
     logging.info('creating the data generators')
 
-    '''
-    # we split the data into training and validation, 70:30
+    x_train, y_train = load_data_set('data/training/')
+    # x_validation, y_validation = load_data_set('data/validation/')
+
     train_datagen = kimage.ImageDataGenerator(
             featurewise_center=True,
             featurewise_std_normalization=True)
     train_datagen.fit(x_train)
+
     '''
-
-    train_datagen = kimage.ImageDataGenerator(rescale=1./255, data_format='channels_last')
-    train_generator = train_datagen.flow_from_directory(
-            'data/training/',
-            target_size=(INPUT_WIDTH, INPUT_HEIGHT),
-            batch_size=BATCH_SIZE,
-            class_mode='categorical')
-
-    train_size = len(os.listdir('data/training/positive')) + len(os.listdir('data/training/negative/'))
-    logging.info('training_size: ' + str(train_size))
-
-    validation_datagen = kimage.ImageDataGenerator(rescale=1./255, data_format='channels_last')
-    validation_generator = validation_datagen.flow_from_directory(
-            'data/validation/',
-            target_size=(INPUT_WIDTH, INPUT_HEIGHT),
-            batch_size=BATCH_SIZE,
-            class_mode='categorical')
-
-    validation_size = len(os.listdir('data/validation/positive')) + len(os.listdir('data/validation/negative'))
-    logging.info('validation_size: ' + str(validation_size))
+    validation_datagen = kimage.ImageDataGenerator(
+            featurewise_center=True,
+            featurewise_std_normalization=True)
+    validation_datagen.fit(x_train)
+    '''
 
     # define the model
     logging.info('defining the model')
@@ -130,24 +117,15 @@ def train_cnn_model():
     # compile model
     logging.info('compiling the model')
     sgd = SGD(lr=0.01) # 0.0001, 0.00001
-    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
 
     # fit the model
     logging.info('fitting the model')
 
-    '''
     model.fit_generator(
             generator=train_datagen.flow(x_train, y_train, batch_size=BATCH_SIZE),
             steps_per_epoch=len(x_train) / BATCH_SIZE,
             epochs=NUM_EPOCHS)
-    '''
-
-    model.fit_generator(
-            generator=train_generator,
-            steps_per_epoch=train_size/BATCH_SIZE,
-            epochs=NUM_EPOCHS,
-            validation_data=validation_generator,
-            validation_steps=validation_size/BATCH_SIZE)
 
     # save the final weigths
     logging.info('saving the model')
