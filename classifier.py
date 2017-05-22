@@ -82,7 +82,8 @@ def train_cnn_model():
 
     # compile model
     logging.info('compiling the model')
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    sgd = SGD(lr=0.001) # 0.0001
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     # fit the model
     logging.info('fitting the model')
