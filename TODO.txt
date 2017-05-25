@@ -1,0 +1,7 @@
+todo list / ideas to try:
+
+- implement precision/recall/f1_score for metric
+- experiment with architecture, batch size
+- oversample the positive examples to balance the datasets
+- generate data, e.g. with rotations, reflections
+- different optimizers; sgd, adam, rmsprop
