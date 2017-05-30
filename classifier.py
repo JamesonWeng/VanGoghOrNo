@@ -2,7 +2,7 @@
 
 from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from keras.models import Sequential
-from keras.optimizers import SGD
+from keras.optimizers import Adam, SGD
 from keras.preprocessing import image as kimage
 import logging
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ BATCH_SIZE = 32
 INPUT_WIDTH = 400
 INPUT_HEIGHT = 400
 NUM_CLASSES = 2
-NUM_EPOCHS = 50
+NUM_EPOCHS = 35
 
 def preprocess_and_generate_samples(file_path, label):
     img = Image.open(file_path)
@@ -66,19 +66,31 @@ def train_cnn_model():
     logging.info('creating the data generators')
 
     x_train, y_train = load_data_set('data/training/')
-    # x_validation, y_validation = load_data_set('data/validation/')
+    logging.info('x_train shape: ' + str(x_train.shape))
+    logging.info('y_train shape: ' + str(y_train.shape))
+
+    x_validation, y_validation = load_data_set('data/validation/')
+    logging.info('x_validation shape: ' + str(x_validation.shape))
+    logging.info('y_validation shape: ' + str(y_validation.shape))
+
+    x_train = np.concatenate((x_train, x_validation), axis=0)
+    y_train = np.concatenate((y_train, y_validation), axis=0)
+    logging.info('x_train shape: ' + str(x_train.shape))
+    logging.info('y_train shape: ' + str(y_train.shape))
+
+    x_validation, y_validation = load_data_set('data/test/')
+    logging.info('x_validation shape: ' + str(x_validation.shape))
+    logging.info('y_validation shape: ' + str(y_validation.shape))
 
     train_datagen = kimage.ImageDataGenerator(
             featurewise_center=True,
             featurewise_std_normalization=True)
     train_datagen.fit(x_train)
 
-    '''
     validation_datagen = kimage.ImageDataGenerator(
             featurewise_center=True,
             featurewise_std_normalization=True)
-    validation_datagen.fit(x_train)
-    '''
+    validation_datagen.fit(x_train) # validation should still be fit according to training
 
     # define the model
     logging.info('defining the model')
@@ -91,33 +103,34 @@ def train_cnn_model():
 
     model.add(Conv2D(32, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Dropout(0.25))
+    # model.add(Dropout(0.25))
 
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(Conv2D(64, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Dropout(0.25))
+    # model.add(Dropout(0.25))
 
     model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(Conv2D(128, (3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2,2)))
-    model.add(Dropout(0.25))
+    # model.add(Dropout(0.25))
 
     model.add(Flatten())
 
     model.add(Dense(1024, activation='relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
 
     model.add(Dense(NUM_CLASSES, activation='softmax'))
 
     # compile model
     logging.info('compiling the model')
-    sgd = SGD(lr=0.01) # 0.0001, 0.00001
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    #sgd = SGD(lr=0.0001) # 0.0001, 0.00001
+    sgd = SGD(lr=0.01, decay=1e-6, momentum=0.9, nesterov=True)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd, metrics=['accuracy'])
 
     # fit the model
     logging.info('fitting the model')
@@ -125,7 +138,9 @@ def train_cnn_model():
     model.fit_generator(
             generator=train_datagen.flow(x_train, y_train, batch_size=BATCH_SIZE),
             steps_per_epoch=len(x_train) / BATCH_SIZE,
-            epochs=NUM_EPOCHS)
+            epochs=NUM_EPOCHS,
+            validation_data=validation_datagen.flow(x_validation, y_validation, batch_size=BATCH_SIZE),
+            validation_steps=len(x_validation) / BATCH_SIZE)
 
     # save the final weigths
     logging.info('saving the model')
