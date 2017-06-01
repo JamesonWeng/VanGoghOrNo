@@ -5,3 +5,7 @@ todo list / ideas to try:
 - oversample the positive examples to balance the datasets
 - generate data, e.g. with rotations, reflections
 - different optimizers; sgd, adam, rmsprop
+- featurewise normalization?
+- investigate gpu for speed
+
+- check that ImageDataGenerator is shuffling between classes - done
