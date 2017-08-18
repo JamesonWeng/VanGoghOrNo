@@ -35,6 +35,7 @@ def test_cnn_model():
 
     test_generator = test_datagen.flow_from_directory(
             'data/test/',
+            # 'data/validation/',
             target_size=(INPUT_WIDTH, INPUT_HEIGHT),
             batch_size=BATCH_SIZE,
             class_mode='categorical')
